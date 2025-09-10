@@ -1,4 +1,5 @@
 ﻿using ITI.HMS.Models;
+using ITI.HMS.Requestes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -54,5 +55,27 @@ namespace ITI.HMS.Controllers
             return Ok(doctor);
         }
 
+
+        [HttpPost]
+        public ActionResult Post([FromBody] CreatDoctorRequest doctor)
+        {
+            if (doctor == null)
+                return BadRequest();
+
+            // todo validation and bad request 
+
+            var maxId = Doctors.Max(d => d.Id);
+            var newId = maxId + 1;
+            var newDoctor = new Doctor
+            {
+                Id = newId,
+                Name = doctor.Name,
+                Specialty = doctor.Specialty,
+                Email = doctor.Email,
+                Phone = doctor.Phone
+            };
+            Doctors.Add(newDoctor);
+            return Ok(newDoctor);
+        }
     }
 }
