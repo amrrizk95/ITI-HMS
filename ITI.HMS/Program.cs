@@ -1,3 +1,5 @@
+using ITI.HMS.Repositories;
+using ITI.HMS.Repositories.Interfaces;
 using ITI.HMS.Services;
 using ITI.HMS.Services.Interfaces;
 
@@ -11,6 +13,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
 ﻿using ITI.HMS.Models;
+using ITI.HMS.Repositories.Interfaces;
 using ITI.HMS.Requestes;
 using ITI.HMS.Services.Interfaces;
 
@@ -6,31 +7,13 @@ namespace ITI.HMS.Services
 {
     public class DoctorService : IDoctorService
     {
-        private readonly static List<Doctor> Doctors = new List<Doctor>
+        private readonly IDoctorRepository _doctorRepository;
+
+        public DoctorService(IDoctorRepository doctorRepository)
         {
-            new Doctor
-            {
-                Id=1,
-                Name="Dr. John Smith",
-                Specialty="Cardiology",
+            _doctorRepository = doctorRepository;
+        }
 
-            },
-            new Doctor
-            {
-                Id=2,
-                Name="Dr. Emily Johnson",
-                Specialty="Neurology",
-
-            },
-            new Doctor
-            {
-                Id=3,
-                Name="Dr. Michael Brown",
-                Specialty="Pediatrics",
-
-            },
-
-        };
         public Result AddDoctor(CreatDoctorRequest doctorRequest)
         {
             // validations
@@ -44,11 +27,9 @@ namespace ITI.HMS.Services
                 return new Result(false, $"Doctor {nameof(doctorRequest.Email)} is required");
 
             Doctor doctor = doctorRequest.ToDoctor();
-            doctor.Id = Doctors.Max(d => d.Id) + 1;
-
             try
             {
-                Doctors.Add(doctor);
+                _doctorRepository.Add(doctor);
                 return new Result<Doctor>(true,doctor);
             }
             catch(Exception ex)
@@ -59,13 +40,13 @@ namespace ITI.HMS.Services
 
         public Result<List<Doctor>> GetAll()
         {
-            List<Doctor> doctors = Doctors;
+            List<Doctor> doctors = _doctorRepository.GetAll();
             return new Result<List<Doctor>>(true, doctors);
         }
 
         public Result<Doctor?> GetById(int id)
         {
-            Doctor? doctor = Doctors.FirstOrDefault(x => x.Id == id);
+            Doctor? doctor = _doctorRepository.Get(id);
             return new Result<Doctor?>(true, doctor);
         }
     }
