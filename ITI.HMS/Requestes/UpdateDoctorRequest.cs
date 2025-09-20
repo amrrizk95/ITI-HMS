@@ -1,8 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace ITI.HMS.Requestes
 {
-    public class CreatDoctorRequest
+    public class UpdateDoctorRequest
     {
         [Required]
         [StringLength(100, MinimumLength = 2)]
