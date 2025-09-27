@@ -1,0 +1,11 @@
+- task 
+create branch => name branch task/yourName_refactor_code => create pr 
+deadline sunday 
+
+-- connect on real db (sql) -- migrations (best practices)
+-- apply auth and roles 
+-- unit testing / integration testing
+-- deploy on azure 
+-- git flow 
+-- dealing with conflicts and merges
+-- code reviews process 

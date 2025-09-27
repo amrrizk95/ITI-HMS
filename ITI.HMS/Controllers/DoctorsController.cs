@@ -1,5 +1,7 @@
 ﻿using ITI.HMS.Models;
 using ITI.HMS.Requestes;
+using ITI.HMS.Services;
+using ITI.HMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,49 +11,29 @@ namespace ITI.HMS.Controllers
     [ApiController]
     public class DoctorsController : ControllerBase
     {
-        private readonly static List<Doctor> Doctors = new List<Doctor>
+        private readonly IDoctorService _doctorService;
+        public DoctorsController(IDoctorService doctorService)
         {
-            new Doctor
-            {
-                Id=1,
-                Name="Dr. John Smith",
-                Specialty="Cardiology",
+            _doctorService = doctorService;
+        }
 
-            },
-            new Doctor
-            {
-                Id=2,
-                Name="Dr. Emily Johnson",
-                Specialty="Neurology",
-
-            },
-            new Doctor
-            {
-                Id=3,
-                Name="Dr. Michael Brown",
-                Specialty="Pediatrics",
-
-            },
-
-        };
 
         //host(domain)/api/Doctors
 
         [HttpGet]
         public List<Doctor> Get()
         {
-            return Doctors;
+            return _doctorService.Get();
         }
 
         [HttpGet("{id}")]
         public ActionResult<Doctor> Get(int id)
         {
-            if (id <=0)
-                return BadRequest();
 
-            var doctor = Doctors.Where(d => d.Id == id).FirstOrDefault();
-            if (doctor == null)
-                return NotFound($"Doctor with id {id} not found");
+            /// controller => service (logic) => repository (data)
+
+            // http call only 
+            var doctor = _doctorService.GetById(id);// 
             return Ok(doctor);
         }
 
@@ -59,23 +41,8 @@ namespace ITI.HMS.Controllers
         [HttpPost]
         public ActionResult Post([FromBody] CreatDoctorRequest doctor)
         {
-            if (doctor == null)
-                return BadRequest();
-
-            // todo validation and bad request 
-
-            var maxId = Doctors.Max(d => d.Id);
-            var newId = maxId + 1;
-            var newDoctor = new Doctor
-            {
-                Id = newId,
-                Name = doctor.Name,
-                Specialty = doctor.Specialty,
-                Email = doctor.Email,
-                Phone = doctor.Phone
-            };
-            Doctors.Add(newDoctor);
-            return Ok(newDoctor);
+           _doctorService.CreateDoctor(doctor);
+            return Ok();
         }
     }
 }
