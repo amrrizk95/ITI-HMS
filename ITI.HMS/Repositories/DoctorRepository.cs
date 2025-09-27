@@ -6,57 +6,33 @@ namespace ITI.HMS.Repositories
 {
     public class DoctorRepository: IDoctorRepository
     {
-
-        private readonly static List<Doctor> Doctors = new List<Doctor>
+        private readonly HMSDbContext _dbContext;
+        public DoctorRepository(HMSDbContext dbContext)
         {
-            new Doctor
-            {
-                Id=1,
-                Name="Dr. John Smith",
-                Specialty="Cardiology",
-
-            },
-            new Doctor
-            {
-                Id=2,
-                Name="Dr. Emily Johnson",
-                Specialty="Neurology",
-
-            },
-            new Doctor
-            {
-                Id=3,
-                Name="Dr. Michael Brown",
-                Specialty="Pediatrics",
-
-            },
-
-        };
+            _dbContext = dbContext;
+        }
 
         public void Add(CreatDoctorRequest doctor)
         {
-
-            var maxId = Doctors.Max(d => d.Id);
-            var newId = maxId + 1;
             var newDoctor = new Doctor
             {
-                Id = newId,
                 Name = doctor.Name,
                 Specialty = doctor.Specialty,
                 Email = doctor.Email,
                 Phone = doctor.Phone
             };
-            Doctors.Add(newDoctor);
+            _dbContext.Doctors.Add(newDoctor);
+            _dbContext.SaveChanges();
         }
 
         public List<Doctor> Get()
         {
-            return Doctors;
+            return _dbContext.Doctors.ToList();
         }
 
         public Doctor GetById(int id)
         {
-            var doctor = Doctors.Where(d => d.Id == id).FirstOrDefault();
+            var doctor = _dbContext.Doctors.FirstOrDefault(d=>d.Id==id);
             return doctor;
         }
     }
