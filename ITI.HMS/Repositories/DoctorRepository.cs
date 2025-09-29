@@ -1,6 +1,8 @@
 ﻿using ITI.HMS.Models;
+using ITI.HMS.Models.Entities;
 using ITI.HMS.Repositories.Interfaces;
 using ITI.HMS.Requestes;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITI.HMS.Repositories
 {
@@ -12,28 +14,56 @@ namespace ITI.HMS.Repositories
             _dbContext = dbContext;
         }
 
-        public void Add(CreatDoctorRequest doctor)
+        public async Task<int> AddAsync(Doctor doctor)
         {
-            var newDoctor = new Doctor
+            await _dbContext.Doctors.AddAsync(doctor);
+            int affectedRows = await _dbContext.SaveChangesAsync();
+            return affectedRows;
+        }
+
+        public async Task<int> DeleteAsync(int id)
+        {
+            var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == id);
+
+            int affectedRows = 0;
+            if (doctor != null)
             {
-                Name = doctor.Name,
-                Specialty = doctor.Specialty,
-                Email = doctor.Email,
-                Phone = doctor.Phone
-            };
-            _dbContext.Doctors.Add(newDoctor);
-            _dbContext.SaveChanges();
+                _dbContext.Doctors.Remove(doctor);
+                affectedRows = await _dbContext.SaveChangesAsync();
+            }
+            return affectedRows;
         }
 
-        public List<Doctor> Get()
+        public async Task<IEnumerable<Doctor>> GetAllAsync()
         {
-            return _dbContext.Doctors.ToList();
+            return await _dbContext.Doctors.ToListAsync();
         }
 
-        public Doctor GetById(int id)
+        public async Task<Doctor?> GetByIdAsync(int id)
         {
-            var doctor = _dbContext.Doctors.FirstOrDefault(d=>d.Id==id);
+            var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == id);
             return doctor;
+        }
+
+        public async Task<Doctor?> GetDoctorWithAppointmentsAsync(int doctorId)
+        {
+            var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId);
+            if(doctor == null)
+            {
+                return null;
+            }
+
+            await _dbContext.Entry(doctor)
+                .Collection(d => d.Appointments)
+                .LoadAsync();
+
+            return doctor;
+        }
+
+        public async Task<int> UpdateAsync(Doctor doctor)
+        {
+            _dbContext.Doctors.Update(doctor);
+            return await _dbContext.SaveChangesAsync();
         }
     }
 }
