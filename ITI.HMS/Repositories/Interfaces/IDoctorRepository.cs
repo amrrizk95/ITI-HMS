@@ -5,8 +5,11 @@ namespace ITI.HMS.Repositories.Interfaces
 {
     public interface IDoctorRepository
     {
-        Doctor GetById(int id);
-        List<Doctor> Get();
-        void Add(CreatDoctorRequest doctor);
+        Task<Doctor?> GetByIdAsync(int id);
+        Task<IEnumerable<Doctor>> GetAllAsync();
+        Task<int> AddAsync(Doctor doctor);
+        Task<int> UpdateAsync(Doctor doctor);
+        Task<int> DeleteAsync(int id);
+        Task<Doctor?> GetDoctorWithAppointmentsAsync(int doctorId);
     }
 }
