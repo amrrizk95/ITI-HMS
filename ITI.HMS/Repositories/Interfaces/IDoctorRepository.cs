@@ -8,5 +8,7 @@ namespace ITI.HMS.Repositories.Interfaces
         Doctor GetById(int id);
         List<Doctor> Get();
         void Add(CreatDoctorRequest doctor);
+        Task AddAsync(Doctor doctor); // Add this for direct Doctor entity
+        Task<Doctor> GetByUserIdAsync(int userId); // Add this to get doctor by user ID
     }
 }
