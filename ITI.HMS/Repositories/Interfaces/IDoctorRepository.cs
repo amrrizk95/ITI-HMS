@@ -1,4 +1,4 @@
-﻿using ITI.HMS.Models;
+﻿using ITI.HMS.Models.Entities;
 using ITI.HMS.Requestes;
 
 namespace ITI.HMS.Repositories.Interfaces
