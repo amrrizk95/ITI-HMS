@@ -46,6 +46,23 @@ namespace ITI.HMS.Controllers
             }
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshTokenRequest refreshTokenRequest)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var response = await _authService.GetTokenAsync(refreshTokenRequest);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("logout")]
         [Authorize]
         public IActionResult Logout()

@@ -11,5 +11,6 @@ namespace ITI.HMS.Services.Interfaces
         string GenerateJwtToken(User user);
         string HashPassword(string password);
         bool VerifyPassword(string password, string hashedPassword);
+        Task<AuthResponse> GetTokenAsync(RefreshTokenRequest refreshTokenRequest);
     }
 }

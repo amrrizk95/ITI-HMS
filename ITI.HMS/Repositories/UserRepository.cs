@@ -54,5 +54,25 @@ namespace ITI.HMS.Repositories
                 await _dbContext.SaveChangesAsync();
             }
         }
+        public async Task AddRefreshTokenAsync(int id,RefreshToken refreshToken,bool removeInActiveTokens = false)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+            if(user != null)
+            {
+                user.RefreshTokens.Add(refreshToken);
+                if (removeInActiveTokens)
+                {
+                    user.RefreshTokens.RemoveAll(t => !t.IsActive);
+                }
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        public async Task<User?> GetUserByRefreshTokenAsync(string refreshToken)
+        {
+            return await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken && rt.RevokenOn == null && rt.ExpiresOn > DateTime.UtcNow));
+        }
     }
 }

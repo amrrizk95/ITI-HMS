@@ -3,9 +3,11 @@ using ITI.HMS.Repositories.Interfaces;
 using ITI.HMS.Requestes;
 using ITI.HMS.Responses;
 using ITI.HMS.Services.Interfaces;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ITI.HMS.Services
@@ -15,14 +17,14 @@ namespace ITI.HMS.Services
         private readonly IUserRepository _userRepository;
         private readonly IDoctorRepository _doctorRepository;
         private readonly IPatientRepository _patientRepository;
-        private readonly IConfiguration _configuration;
+        private readonly JWTOptions _jwt;
 
-        public AuthService(IUserRepository userRepository, IDoctorRepository doctorRepository, IPatientRepository patientRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IDoctorRepository doctorRepository, IPatientRepository patientRepository, IOptions<JWTOptions> jwt)
         {
             _userRepository = userRepository;
             _doctorRepository = doctorRepository;
             _patientRepository = patientRepository;
-            _configuration = configuration;
+            _jwt = jwt.Value;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -117,13 +119,24 @@ namespace ITI.HMS.Services
             // Generate token
             var token = GenerateJwtToken(user);
 
+            var refreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                ExpiresOn = DateTime.UtcNow.AddDays(30),
+            };
+
+            // insert the new refresh token
+            await _userRepository.AddRefreshTokenAsync(user.Id, refreshToken);
+
             return new AuthResponse
             {
                 Token = token,
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                ExpiresAt = DateTime.UtcNow.AddHours(24)
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwt.DurationInMinutes),
+                RefreshToken = refreshToken.Token,
+                RefreshTokenExpirationDate = refreshToken.ExpiresOn
             };
         }
 
@@ -139,19 +152,73 @@ namespace ITI.HMS.Services
 
             var token = GenerateJwtToken(user);
 
+            var refreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                ExpiresOn = DateTime.UtcNow.AddDays(30),
+            };
+
+            // insert the new refresh token
+            await _userRepository.AddRefreshTokenAsync(user.Id, refreshToken, removeInActiveTokens:true);
+
             return new AuthResponse
             {
                 Token = token,
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                ExpiresAt = DateTime.UtcNow.AddHours(24)
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwt.DurationInMinutes),
+                RefreshToken = refreshToken.Token,
+                RefreshTokenExpirationDate = refreshToken.ExpiresOn
             };
+        }
+
+        public async Task<AuthResponse> GetTokenAsync(RefreshTokenRequest refreshTokenRequest)
+        {
+            if (refreshTokenRequest == null)
+                throw new ArgumentNullException($"{nameof(refreshTokenRequest)} can't be null");
+
+            var refreshToken = refreshTokenRequest.RefreshToken;
+
+            if(refreshToken == null)
+                throw new ArgumentException($"{nameof(refreshToken)} can't be null");
+
+            var user = await _userRepository.GetUserByRefreshTokenAsync(refreshToken);
+
+            if (user == null)
+                throw new UnauthorizedAccessException("Invalid refresh token");
+
+            // Revoke old refresh token
+            var oldRefreshToken = user.RefreshTokens.First(t => t.Token == refreshToken);
+            oldRefreshToken.RevokenOn = DateTime.UtcNow;
+
+            // generate new refresh token 
+            var newRefreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                ExpiresOn = DateTime.UtcNow.AddDays(30),
+            };
+            user.RefreshTokens.Add(newRefreshToken);
+
+            await _userRepository.UpdateAsync(user);
+
+            var authResponse = new AuthResponse
+            {
+                Email = user.Email,
+                Username = user.Username,
+                Token = GenerateJwtToken(user),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwt.DurationInMinutes),
+                Role = user.Role,
+                RefreshToken = newRefreshToken.Token,
+                RefreshTokenExpirationDate = newRefreshToken.ExpiresOn
+            };
+
+            return authResponse;
         }
 
         public string GenerateJwtToken(User user)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -163,8 +230,8 @@ namespace ITI.HMS.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _jwt.Issuer,
+                audience: _jwt.Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(24),
                 signingCredentials: credentials
@@ -181,6 +248,15 @@ namespace ITI.HMS.Services
         public bool VerifyPassword(string password, string hashedPassword)
         {
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
         }
     }
 }

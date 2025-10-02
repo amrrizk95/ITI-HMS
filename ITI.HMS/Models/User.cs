@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ITI.HMS.Models
 {
     public class User
@@ -11,6 +13,9 @@ namespace ITI.HMS.Models
         public UserRole Role { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; } = true;
+
+        [JsonIgnore]
+        public List<RefreshToken> RefreshTokens { get; set; } = new();
     }
 
     public enum UserRole
