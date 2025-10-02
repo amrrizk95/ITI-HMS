@@ -11,5 +11,7 @@ namespace ITI.HMS.Repositories.Interfaces
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(int id);
+        Task AddRefreshTokenAsync(int id, RefreshToken refreshToken,bool removeInActiveTokens = false);
+        Task<User?> GetUserByRefreshTokenAsync(string refreshToken);
     }
 }

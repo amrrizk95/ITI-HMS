@@ -9,5 +9,7 @@ namespace ITI.HMS.Responses
         public string Email { get; set; }
         public UserRole Role { get; set; }
         public DateTime ExpiresAt { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTime RefreshTokenExpirationDate { get; set; }
     }
 }
