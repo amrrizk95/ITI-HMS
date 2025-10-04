@@ -1,0 +1,91 @@
+@page "/patients"
+@using ITI.HMS.BlazorWASM.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Patients</PageTitle>
+
+<h3>Patients List (Blazor WASM)</h3>
+
+@if (loading)
+{
+    <p><em>Loading patients...</em></p>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">
+        <h4>🚫 CORS Error Demonstration</h4>
+        <p><strong>Error:</strong> @error</p>
+        <p><strong>Technical Details:</strong></p>
+        <ul>
+            <li>Blazor WASM runs C# code in browser via WebAssembly</li>
+            <li>HttpClient calls use browser's fetch() API internally</li>
+            <li>Browser enforces CORS policy on fetch() calls</li>
+            <li>Different ports = different origins = CORS required</li>
+        </ul>
+    </div>
+}
+else if (patients != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Gender</th>
+                <th>Date of Birth</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var patient in patients)
+            {
+                <tr>
+                    <td>@patient.Id</td>
+                    <td>@patient.Name</td>
+                    <td>@patient.Email</td>
+                    <td>@patient.Gender</td>
+                    <td>@patient.DateOfBirth.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-warning" @onclick="LoadPatients">Try API Call (Will Fail)</button>
+
+@code {
+    private List<Patient>? patients;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPatients();
+    }
+
+    private async Task LoadPatients()
+    {
+        try
+        {
+            loading = true;
+            error = null;
+
+            // This will definitely fail with CORS error
+            patients = await Http.GetFromJsonAsync<List<Patient>>("api/patients");
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+            await JS.InvokeVoidAsync("console.log", "Expected CORS error occurred:", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

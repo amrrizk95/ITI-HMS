@@ -1,0 +1,83 @@
+@model ITI.HMS.MVC.Models.LoginRequest
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>🔐 Login - MVC Demo</h3>
+                <p class="text-muted">Demonstrating server-side authentication without CORS issues</p>
+            </div>
+            <div class="card-body">
+                <form asp-action="Login" method="post">
+                    <div class="form-group mb-3">
+                        <label asp-for="Username" class="form-label">Username:</label>
+                        <input asp-for="Username" class="form-control" placeholder="Enter username" />
+                        <span asp-validation-for="Username" class="text-danger"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label asp-for="Password" class="form-label">Password:</label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        @if (ViewBag.Success != null)
+        {
+            <div class="alert alert-success">
+                <h5>✅ Success!</h5>
+                <p>@ViewBag.Success</p>
+                @if (ViewBag.AuthResponse != null)
+                {
+                    var auth = ViewBag.AuthResponse as ITI.HMS.MVC.Models.AuthResponse;
+                    <hr />
+                    <p><strong>Username:</strong> @auth.Username</p>
+                    <p><strong>Role:</strong> @auth.Role</p>
+                    <p><strong>Token:</strong> @auth.Token[..20]...</p>
+                    <p><strong>Expires:</strong> @auth.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</p>
+                }
+                <div class="mt-3">
+                    <a href="/Doctors" class="btn btn-outline-primary btn-sm">View Doctors</a>
+                    <a href="/Patients" class="btn btn-outline-secondary btn-sm">View Patients</a>
+                </div>
+            </div>
+        }
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                <h5>❌ Error</h5>
+                <p>@ViewBag.Error</p>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header">
+                <h6>🎓 Teaching Notes</h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Why MVC doesn't need CORS:</strong>
+                    <ul>
+                        <li>HttpClient runs on server-side</li>
+                        <li>No browser security restrictions</li>
+                        <li>Direct server-to-server communication</li>
+                        <li>Session-based authentication possible</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

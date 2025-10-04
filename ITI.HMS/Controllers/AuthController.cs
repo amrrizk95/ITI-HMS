@@ -46,12 +46,48 @@ namespace ITI.HMS.Controllers
             }
         }
 
+        [HttpPost("refresh")]
+        public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("revoke")]
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                await _authService.RevokeTokenAsync(request.RefreshToken);
+                return Ok(new { message = "Token revoked successfully" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("logout")]
         [Authorize]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
         {
-            // With JWT, logout is handled client-side by removing the token
-            return Ok(new { message = "Logged out successfully" });
+            try
+            {
+                // Revoke the refresh token on logout
+                await _authService.RevokeTokenAsync(request.RefreshToken);
+                return Ok(new { message = "Logged out successfully" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("profile")]

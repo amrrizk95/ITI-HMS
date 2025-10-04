@@ -8,6 +8,8 @@ namespace ITI.HMS.Services.Interfaces
     {
         Task<AuthResponse> RegisterAsync(RegisterRequest request);
         Task<AuthResponse> LoginAsync(LoginRequest request);
+        Task<AuthResponse> RefreshTokenAsync(string refreshToken);
+        Task RevokeTokenAsync(string refreshToken);
         string GenerateJwtToken(User user);
         string HashPassword(string password);
         bool VerifyPassword(string password, string hashedPassword);

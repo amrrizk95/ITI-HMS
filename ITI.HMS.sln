@@ -5,6 +5,10 @@ VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITI.HMS", "ITI.HMS\ITI.HMS.csproj", "{B6B2458E-71C8-433A-A20D-70A1185B269C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITI.HMS.BlazorWASM", "ITI.HMS.BlazorWASM\ITI.HMS.BlazorWASM.csproj", "{A2C0B5C9-C21A-42A8-ACBF-CC509EA54349}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITI.HMS.MVC", "ITI.HMS.MVC\ITI.HMS.MVC.csproj", "{0C331925-ECB5-4E93-85CD-8F1B1D90324E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{B6B2458E-71C8-433A-A20D-70A1185B269C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6B2458E-71C8-433A-A20D-70A1185B269C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6B2458E-71C8-433A-A20D-70A1185B269C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2C0B5C9-C21A-42A8-ACBF-CC509EA54349}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2C0B5C9-C21A-42A8-ACBF-CC509EA54349}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2C0B5C9-C21A-42A8-ACBF-CC509EA54349}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2C0B5C9-C21A-42A8-ACBF-CC509EA54349}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C331925-ECB5-4E93-85CD-8F1B1D90324E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C331925-ECB5-4E93-85CD-8F1B1D90324E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C331925-ECB5-4E93-85CD-8F1B1D90324E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C331925-ECB5-4E93-85CD-8F1B1D90324E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
