@@ -6,6 +6,7 @@ using ITI.HMS.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ITI.HMS.Services
@@ -15,13 +16,20 @@ namespace ITI.HMS.Services
         private readonly IUserRepository _userRepository;
         private readonly IDoctorRepository _doctorRepository;
         private readonly IPatientRepository _patientRepository;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IConfiguration _configuration;
 
-        public AuthService(IUserRepository userRepository, IDoctorRepository doctorRepository, IPatientRepository patientRepository, IConfiguration configuration)
+        public AuthService(
+            IUserRepository userRepository,
+            IDoctorRepository doctorRepository,
+            IPatientRepository patientRepository,
+            IRefreshTokenRepository refreshTokenRepository,
+            IConfiguration configuration)
         {
             _userRepository = userRepository;
             _doctorRepository = doctorRepository;
             _patientRepository = patientRepository;
+            _refreshTokenRepository = refreshTokenRepository;
             _configuration = configuration;
         }
 
@@ -114,16 +122,19 @@ namespace ITI.HMS.Services
                 await _patientRepository.AddAsync(patient);
             }
 
-            // Generate token
+            // Generate tokens
             var token = GenerateJwtToken(user);
+            var refreshToken = await GenerateRefreshTokenAsync(user.Id);
 
             return new AuthResponse
             {
                 Token = token,
+                RefreshToken = refreshToken.Token,
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                ExpiresAt = DateTime.UtcNow.AddHours(24)
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = refreshToken.ExpiresAt
             };
         }
 
@@ -138,14 +149,17 @@ namespace ITI.HMS.Services
                 throw new UnauthorizedAccessException("Account is deactivated");
 
             var token = GenerateJwtToken(user);
+            var refreshToken = await GenerateRefreshTokenAsync(user.Id);
 
             return new AuthResponse
             {
                 Token = token,
+                RefreshToken = refreshToken.Token,
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                ExpiresAt = DateTime.UtcNow.AddHours(24)
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = refreshToken.ExpiresAt
             };
         }
 
@@ -166,7 +180,7 @@ namespace ITI.HMS.Services
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(24),
+                expires: DateTime.UtcNow.AddMinutes(15), // Short-lived access token
                 signingCredentials: credentials
             );
 
@@ -181,6 +195,74 @@ namespace ITI.HMS.Services
         public bool VerifyPassword(string password, string hashedPassword)
         {
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        }
+
+        public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
+        {
+            var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+            if (storedToken == null)
+                throw new UnauthorizedAccessException("Invalid refresh token");
+
+            if (!storedToken.IsActive)
+                throw new UnauthorizedAccessException("Refresh token is expired or revoked");
+
+            // Revoke old refresh token
+            await _refreshTokenRepository.RevokeAsync(storedToken);
+
+            // Generate new tokens
+            var user = storedToken.User;
+            var newAccessToken = GenerateJwtToken(user);
+            var newRefreshToken = await GenerateRefreshTokenAsync(user.Id);
+
+            // Store token replacement
+            storedToken.ReplacedByToken = newRefreshToken.Token;
+            await _refreshTokenRepository.RevokeAsync(storedToken);
+
+            return new AuthResponse
+            {
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken.Token,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = newRefreshToken.ExpiresAt
+            };
+        }
+
+        public async Task RevokeTokenAsync(string refreshToken)
+        {
+            var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+            if (storedToken == null)
+                throw new ArgumentException("Invalid refresh token");
+
+            if (!storedToken.IsActive)
+                throw new ArgumentException("Token is already revoked or expired");
+
+            await _refreshTokenRepository.RevokeAsync(storedToken);
+        }
+
+        private async Task<RefreshToken> GenerateRefreshTokenAsync(int userId)
+        {
+            var refreshToken = new RefreshToken
+            {
+                Token = GenerateSecureRandomToken(),
+                UserId = userId,
+                ExpiresAt = DateTime.UtcNow.AddDays(7), // Long-lived refresh token
+                CreatedAt = DateTime.UtcNow
+            };
+
+            return await _refreshTokenRepository.CreateAsync(refreshToken);
+        }
+
+        private string GenerateSecureRandomToken()
+        {
+            var randomBytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
         }
     }
 }
