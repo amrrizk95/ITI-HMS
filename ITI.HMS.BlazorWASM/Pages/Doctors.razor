@@ -1,0 +1,85 @@
+@page "/doctors"
+@using ITI.HMS.BlazorWASM.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Doctors</PageTitle>
+
+<h3>Doctors</h3>
+
+@if (loading)
+{
+    <p><em>Loading doctors...</em></p>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">
+        <h4>❌ Error</h4>
+        <p><strong>Error:</strong> @error</p>
+    </div>
+}
+else if (doctors != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Specialty</th>
+                <th>Email</th>
+                <th>Phone</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var doctor in doctors)
+            {
+                <tr>
+                    <td>@doctor.Id</td>
+                    <td>@doctor.Name</td>
+                    <td>@doctor.Specialty</td>
+                    <td>@doctor.Email</td>
+                    <td>@doctor.Phone</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-primary" @onclick="LoadDoctors">Reload Doctors</button>
+
+@code {
+    private List<Doctor>? doctors;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDoctors();
+    }
+
+    private async Task LoadDoctors()
+    {
+        try
+        {
+            loading = true;
+            error = null;
+
+            // Load doctors from API
+            doctors = await Http.GetFromJsonAsync<List<Doctor>>("api/doctors");
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+            await JS.InvokeVoidAsync("console.error", "HTTP Error:", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            await JS.InvokeVoidAsync("console.error", "General Error:", ex.Message);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

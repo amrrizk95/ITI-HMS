@@ -1,0 +1,100 @@
+@page "/login"
+@using ITI.HMS.BlazorWASM.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Login</PageTitle>
+
+<h3>Login</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Login Form</h4>
+            </div>
+            <div class="card-body">
+                <EditForm Model="@loginRequest" OnValidSubmit="@HandleLogin">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username:</label>
+                        <InputText id="username" class="form-control" @bind-Value="loginRequest.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password:</label>
+                        <InputText type="password" id="password" class="form-control" @bind-Value="loginRequest.Password" />
+                    </div>
+                    <button type="submit" class="btn btn-primary" disabled="@loading">
+                        @if (loading)
+                        {
+                            <span>Logging in...</span>
+                        }
+                        else
+                        {
+                            <span>Login</span>
+                        }
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        @if (error != null)
+        {
+            <div class="alert alert-danger">
+                <h5>❌ Error</h5>
+                <p><strong>Error:</strong> @error</p>
+            </div>
+        }
+        else if (authResponse != null)
+        {
+            <div class="alert alert-success">
+                <h5>✅ Login Successful!</h5>
+                <p><strong>Username:</strong> @authResponse.Username</p>
+                <p><strong>Role:</strong> @authResponse.Role</p>
+                <p><strong>Token:</strong> @authResponse.Token[..20]...</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private AuthResponse? authResponse;
+    private string? error;
+    private bool loading = false;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            loading = true;
+            error = null;
+
+            // This will cause CORS error
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
+                await JS.InvokeVoidAsync("console.log", "Login successful", authResponse);
+            }
+            else
+            {
+                error = $"Login failed: {response.StatusCode}";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+            await JS.InvokeVoidAsync("console.error", "CORS Error during login:", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}
